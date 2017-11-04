@@ -2,7 +2,7 @@
 BIN = demo
 
 # This is what works for me, on a mac using homebrew
-CINCLUDE_PATH=-I /usr/local/Cellar/glew/1.13.0/include -I /usr/local/Cellar/glfw3/3.1.2/include
+#CINCLUDE_PATH=-I /usr/local/Cellar/glew/1.13.0/include -I /usr/local/Cellar/glfw3/3.1.2/include
 
 # Flags
 CFLAGS = -O3
