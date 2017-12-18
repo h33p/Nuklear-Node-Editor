@@ -15,7 +15,9 @@ typedef void (*NodeDrawFn) (struct node*, struct nk_context*);
 
 extern NodeDrawFn draw_functions[NDE_MAX_FUNCS];
 
+#ifndef MAX_INPUTS
 #define MAX_INPUTS 32
+#endif
 
 #ifndef NDE_CUSTOM_DATA
 struct node_data {
