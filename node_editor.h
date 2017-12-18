@@ -15,8 +15,10 @@
 #define NDE_RETURN struct nk_color
 #endif
 
+struct node_editor;
+
 typedef void (*NodeDrawFn) (struct node*, struct nk_context*);
-typedef NDE_RETURN (*NodeCalcFn) (struct node*, struct nk_context*);
+typedef NDE_RETURN (*NodeCalcFn) (struct node*, struct node_editor*);
 
 struct node_functions
 {
