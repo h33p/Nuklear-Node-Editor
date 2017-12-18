@@ -318,7 +318,7 @@ static void node_editor_init(struct node_editor *editor)
 }
 #endif
 
-int node_editor(struct nk_context *ctx, struct node_editor* nodeedit, const char* title)
+int node_edit(struct nk_context *ctx, struct node_editor* nodeedit, const char* title)
 {
 	int n = 0;
 	struct nk_rect total_space;

@@ -165,8 +165,8 @@ int main(void)
 
 				static struct node_editor node1;
 				static struct node_editor node2;
-				node_editor(ctx, &node1, "Editor 1");
-				node_editor(ctx, &node2, "Editor 3");
+				node_edit(ctx, &node1, "Editor 1");
+				node_edit(ctx, &node2, "Editor 3");
 
         /* -------------- EXAMPLES ---------------- */
         /*calculator(ctx);*/
