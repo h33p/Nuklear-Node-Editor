@@ -1,19 +1,39 @@
 //Node Editor, GNU GPL v3 (Originally Public Domain)
 //This is a heavily extended version of Nuklear's node editor demo, it fixes a small bug with the grid, cleaned up global state, includes unlinking, snapping the links, deleting nodes, nodes with infinite amount of links (actually limited to a set amount but don't talk about that) as well as custom draw functions for each node
 
+#ifndef NDE_MAX_FUNCS
+#define NDE_MAX_FUNCS 32
+#endif
+
+#ifndef LEN
+#define LEN(a) (sizeof(a)/sizeof(a)[0])
+#endif
+
 #pragma once
 
 typedef void (*NodeDrawFn) (struct node*, struct nk_context*);
-static void draw_color(struct node* cnode, struct nk_context* ctx);
-static void draw_info(struct node* cnode, struct nk_context* ctx);
+
+extern NodeDrawFn draw_functions[NDE_MAX_FUNCS];
+
 #define MAX_INPUTS 32
+
+#ifndef NDE_CUSTOM_DATA
+struct node_data {
+	struct nk_color color;
+
+	node_data()
+	{
+		color = nk_rgb(255, 0, 0);
+	}
+};
+#endif
 
 struct node {
 	int ID;
 	char name[32];
 	struct nk_rect bounds;
 	float value;
-	struct nk_color color;
+	struct node_data data;
 	struct node_link* inputs[MAX_INPUTS];
 	struct nk_color gapped_color;
 	int input_gapped;
@@ -74,7 +94,7 @@ static void node_editor_push(struct node_editor *editor, struct node *node, bool
 		begin = &editor->deleted_begin;
 		end = &editor->deleted_end;
 	}
-	else 
+	else
 	{
 		begin = &editor->begin;
 		end = &editor->end;
@@ -102,7 +122,7 @@ static struct node* node_editor_pop(struct node_editor *editor, struct node *nod
 		begin = &editor->deleted_begin;
 		end = &editor->deleted_end;
 	}
-	else 
+	else
 	{
 		begin = &editor->begin;
 		end = &editor->end;
@@ -132,7 +152,7 @@ static struct node* node_editor_find(struct node_editor *editor, int ID)
 }
 
 static void node_editor_add(struct node_editor *editor, const char *name, struct nk_rect bounds,
-		struct nk_color col, int in_count, int out_count, NodeDrawFn draw_function, bool infinite_inputs = false, int gapped_inputs = 0, struct nk_color gapped_color = nk_rgb(100, 70, 70))
+		struct node_data data, int in_count, int out_count, NodeDrawFn draw_function, bool infinite_inputs = false, int gapped_inputs = 0, struct nk_color gapped_color = nk_rgb(100, 70, 70))
 {
 	struct node *node;
 	if (!editor->deleted_begin)
@@ -143,15 +163,13 @@ static void node_editor_add(struct node_editor *editor, const char *name, struct
 	}
 	else
 		node = node_editor_pop(editor, editor->deleted_begin, true);
-	node->value = 0;
+	node->data = data;
 	node->infinite_inputs = infinite_inputs;
-	node->color = nk_rgb(255, 0, 0);
 	node->input_count = in_count;
 	node->gapped_color = gapped_color;
 	node->input_gapped = gapped_inputs;
 	node->min_input_count = in_count;
 	node->output_count = out_count;
-	node->color = col;
 	node->bounds = bounds;
 	node->draw = draw_function;
 	strcpy(node->name, name);
@@ -270,6 +288,7 @@ static void node_editor_clean_links(struct node_editor* editor)
 	} while (tnode);
 }
 
+#ifndef NDE_CUSTOM_INIT
 static void node_editor_init(struct node_editor *editor)
 {
 	memset(editor, 0, sizeof(*editor));
@@ -277,13 +296,14 @@ static void node_editor_init(struct node_editor *editor)
 	editor->end = NULL;
 	editor->deleted_begin = NULL;
 	editor->deleted_end = NULL;
-	node_editor_add(editor, "Source", nk_rect(40, 10, 180, 220), nk_rgb(255, 0, 0), 0, 1, &draw_color);
-	node_editor_add(editor, "Source", nk_rect(40, 260, 180, 220), nk_rgb(0, 255, 0), 0, 1, &draw_color);
-	node_editor_add(editor, "Combine", nk_rect(400, 100, 180, 220), nk_rgb(0,0,255), 2, 2, &draw_color);
+	node_editor_add(editor, "Source", nk_rect(40, 10, 180, 220), node_data(), 0, 1, draw_functions[0]);
+	node_editor_add(editor, "Source", nk_rect(40, 260, 180, 220), node_data(), 0, 1, draw_functions[0]);
+	node_editor_add(editor, "Combine", nk_rect(400, 100, 180, 220), node_data(), 2, 2, draw_functions[0]);
 	node_editor_link(editor, 0, 0, 2, 0);
 	node_editor_link(editor, 1, 0, 2, 1);
 	editor->show_grid = nk_true;
 }
+#endif
 
 int node_editor(struct nk_context *ctx, struct node_editor* nodeedit, const char* title)
 {
@@ -298,9 +318,11 @@ int node_editor(struct nk_context *ctx, struct node_editor* nodeedit, const char
 		nodeedit->initialized = 1;
 	}
 
+#ifndef NDE_NO_WINDOW
 	if (nk_begin(ctx, title, nk_rect(0, 0, 800, 600),
 				NK_WINDOW_BORDER|NK_WINDOW_NO_SCROLLBAR|NK_WINDOW_MOVABLE|NK_WINDOW_CLOSABLE))
 	{
+#endif
 		/* allocate complete window space */
 		canvas = nk_window_get_canvas(ctx);
 		total_space = nk_window_get_content_region(ctx);
@@ -374,7 +396,7 @@ int node_editor(struct nk_context *ctx, struct node_editor* nodeedit, const char
 					}
 					/* contextual menu */
 					if (!nodeedit->popupOpened && nk_input_is_mouse_hovering_rect(in, node->bounds))
-						nodeedit->hovered = it;											
+						nodeedit->hovered = it;
 
 					/* ================= NODE CONTENT =====================*/
 					it->draw(it, ctx);
@@ -496,7 +518,7 @@ int node_editor(struct nk_context *ctx, struct node_editor* nodeedit, const char
 				nk_layout_row_dynamic(ctx, 25, 1);
 				if (nk_contextual_item_label(ctx, "New", NK_TEXT_CENTERED))
 					node_editor_add(nodeedit, "New", nk_rect(400, 260, 180, 220),
-							nk_rgb(255, 255, 255), 1, 2, &draw_info, true, 1);
+									node_data(), 1, 2, draw_functions[1], true, 1);
 				if (nk_contextual_item_label(ctx, grid_option[nodeedit->show_grid],NK_TEXT_CENTERED))
 					nodeedit->show_grid = !nodeedit->show_grid;
 				nk_contextual_end(ctx);
@@ -527,8 +549,12 @@ int node_editor(struct nk_context *ctx, struct node_editor* nodeedit, const char
 			nodeedit->scrolling.x += in->mouse.delta.x;
 			nodeedit->scrolling.y += in->mouse.delta.y;
 		}
+#ifndef NDE_NO_WINDOW
 	}
 	nk_end(ctx);
 	return !nk_window_is_closed(ctx, title);
+#else
+	return 1;
+#endif
 }
 
