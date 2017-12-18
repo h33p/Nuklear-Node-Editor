@@ -318,6 +318,8 @@ static void node_editor_init(struct node_editor *editor)
 	node_editor_link(editor, 1, 0, 2, 1);
 	editor->show_grid = nk_true;
 }
+#else
+void node_editor_init(struct node_editor *editor);
 #endif
 
 int node_edit(struct nk_context *ctx, struct node_editor* nodeedit, const char* title)
