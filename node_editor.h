@@ -11,9 +11,20 @@
 
 #pragma once
 
-typedef void (*NodeDrawFn) (struct node*, struct nk_context*);
+#ifndef NDE_RETURN
+#define NDE_RETURN struct nk_color
+#endif
 
-extern NodeDrawFn draw_functions[NDE_MAX_FUNCS];
+typedef void (*NodeDrawFn) (struct node*, struct nk_context*);
+typedef NDE_RETURN (*NodeCalcFn) (struct node*, struct nk_context*);
+
+struct node_functions
+{
+	NodeDrawFn draw;
+	NodeCalcFn calc;
+};
+
+extern struct node_functions node_ftables[NDE_MAX_FUNCS];
 
 #ifndef MAX_INPUTS
 #define MAX_INPUTS 32
@@ -46,7 +57,7 @@ struct node {
 	struct node *next;
 	struct node *prev;
 
-	NodeDrawFn draw;
+	node_functions ftable;
 };
 
 struct node_link {
@@ -154,7 +165,7 @@ static struct node* node_editor_find(struct node_editor *editor, int ID)
 }
 
 static void node_editor_add(struct node_editor *editor, const char *name, struct nk_rect bounds,
-		struct node_data data, int in_count, int out_count, NodeDrawFn draw_function, bool infinite_inputs = false, int gapped_inputs = 0, struct nk_color gapped_color = nk_rgb(100, 70, 70))
+		struct node_data data, int in_count, int out_count, node_functions ftable, bool infinite_inputs = false, int gapped_inputs = 0, struct nk_color gapped_color = nk_rgb(100, 70, 70))
 {
 	struct node *node;
 	if (!editor->deleted_begin)
@@ -173,7 +184,7 @@ static void node_editor_add(struct node_editor *editor, const char *name, struct
 	node->min_input_count = in_count;
 	node->output_count = out_count;
 	node->bounds = bounds;
-	node->draw = draw_function;
+	node->ftable = ftable;
 	strcpy(node->name, name);
 	node_editor_push(editor, node);
 }
@@ -298,9 +309,9 @@ static void node_editor_init(struct node_editor *editor)
 	editor->end = NULL;
 	editor->deleted_begin = NULL;
 	editor->deleted_end = NULL;
-	node_editor_add(editor, "Source", nk_rect(40, 10, 180, 220), node_data(), 0, 1, draw_functions[0]);
-	node_editor_add(editor, "Source", nk_rect(40, 260, 180, 220), node_data(), 0, 1, draw_functions[0]);
-	node_editor_add(editor, "Combine", nk_rect(400, 100, 180, 220), node_data(), 2, 2, draw_functions[0]);
+	node_editor_add(editor, "Source", nk_rect(40, 10, 180, 220), node_data(), 0, 1, node_ftables[0]);
+	node_editor_add(editor, "Source", nk_rect(40, 260, 180, 220), node_data(), 0, 1, node_ftables[0]);
+	node_editor_add(editor, "Combine", nk_rect(400, 100, 180, 220), node_data(), 2, 2, node_ftables[0]);
 	node_editor_link(editor, 0, 0, 2, 0);
 	node_editor_link(editor, 1, 0, 2, 1);
 	editor->show_grid = nk_true;
@@ -401,7 +412,7 @@ int node_editor(struct nk_context *ctx, struct node_editor* nodeedit, const char
 						nodeedit->hovered = it;
 
 					/* ================= NODE CONTENT =====================*/
-					it->draw(it, ctx);
+					it->ftable.draw(it, ctx);
 					/* ====================================================*/
 					nk_group_end(ctx);
 				}
@@ -520,7 +531,7 @@ int node_editor(struct nk_context *ctx, struct node_editor* nodeedit, const char
 				nk_layout_row_dynamic(ctx, 25, 1);
 				if (nk_contextual_item_label(ctx, "New", NK_TEXT_CENTERED))
 					node_editor_add(nodeedit, "New", nk_rect(400, 260, 180, 220),
-									node_data(), 1, 2, draw_functions[1], true, 1);
+									node_data(), 1, 2, node_ftables[1], true, 1);
 				if (nk_contextual_item_label(ctx, grid_option[nodeedit->show_grid],NK_TEXT_CENTERED))
 					nodeedit->show_grid = !nodeedit->show_grid;
 				nk_contextual_end(ctx);

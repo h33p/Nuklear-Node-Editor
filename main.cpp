@@ -40,7 +40,7 @@
 #include "node_editor.h"
 static void draw_color(struct node* cnode, struct nk_context* ctx);
 static void draw_info(struct node* cnode, struct nk_context* ctx);
-static NodeDrawFn draw_functions[NDE_MAX_FUNCS];
+static struct node_functions node_ftables[NDE_MAX_FUNCS];
 #include "custom_nodes.h"
 
 /* ===============================================================
@@ -67,8 +67,8 @@ static void error_callback(int e, const char *d)
 int main(void)
 {
 	/* Set up node functions */
-	draw_functions[0] = &draw_color;
-	draw_functions[1] = &draw_info;
+	node_ftables[0].draw = &draw_color;
+	node_ftables[1].draw = &draw_info;
 
     /* Platform */
     static GLFWwindow *win;
