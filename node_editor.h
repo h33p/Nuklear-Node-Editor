@@ -442,10 +442,9 @@ int node_edit(struct nk_context *ctx, struct node_editor* nodeedit, const char* 
                     /* always have last selected node on top */
 
                     node = nk_window_get_panel(ctx);
-                    if (nk_input_mouse_clicked(in, NK_BUTTON_LEFT, node->bounds) &&
-                            (!(it->prev && nk_input_mouse_clicked(in, NK_BUTTON_LEFT,
-                                                                                                        nk_layout_space_rect_to_screen(ctx, node->bounds)))) &&
-                            nodeedit->end != it)
+                    if (updated != nodeedit->end && nk_input_is_mouse_hovering_rect(in, node->bounds) &&
+                            (!(it->prev && nk_input_is_mouse_hovering_rect(in,
+                                                                                                        nk_layout_space_rect_to_screen(ctx, node->bounds)))))
                     {
                         updated = it;
                     }
@@ -552,7 +551,7 @@ int node_edit(struct nk_context *ctx, struct node_editor* nodeedit, const char* 
             }
 
             /* node selection */
-            if (nk_window_is_active(ctx, title) && nk_input_mouse_clicked(in, NK_BUTTON_LEFT, nk_layout_space_bounds(ctx))) {
+            if (nk_window_is_active(ctx, title) && nk_input_is_mouse_down(in, NK_BUTTON_LEFT) && nk_input_is_mouse_hovering_rect(in, nk_layout_space_bounds(ctx))) {
                 it = nodeedit->begin;
                 nodeedit->selected = NULL;
                 nodeedit->bounds = nk_rect(in->mouse.pos.x, in->mouse.pos.y, 100, 200);
