@@ -11,6 +11,8 @@
 
 #pragma once
 
+#define hovering_in_node(in, bounds) nk_input_is_mouse_hovering_rect(in, nk_rect(bounds.x, bounds.y - 35.f, bounds.w, bounds.h + 35.f))
+
 #ifndef NDE_RETURN
 #define NDE_RETURN struct nk_color
 #endif
@@ -85,6 +87,7 @@ struct node_linking {
 
 struct node_editor {
     int initialized;
+	char name[64];
     struct node node_buf[64];
     struct node_link links[256];
     struct node *begin;
@@ -309,6 +312,7 @@ static void node_editor_clean_links(struct node_editor* editor)
 static void node_editor_init(struct node_editor *editor)
 {
     memset(editor, 0, sizeof(*editor));
+	editor->name[0] = '\0'
     editor->begin = NULL;
     editor->end = NULL;
     editor->deleted_begin = NULL;
@@ -319,6 +323,7 @@ static void node_editor_init(struct node_editor *editor)
     node_editor_link(editor, 0, 0, 2, 0);
     node_editor_link(editor, 1, 0, 2, 1);
     editor->show_grid = nk_true;
+	editor->initialized = 1;
 }
 #else
 void node_editor_init(struct node_editor *editor);
@@ -368,10 +373,8 @@ int node_edit(struct nk_context *ctx, struct node_editor* nodeedit, const char* 
     struct nk_command_buffer *canvas;
     struct node *updated = 0;
 
-    if (!nodeedit->initialized) {
+    if (!nodeedit->initialized)
         node_editor_init(nodeedit);
-        nodeedit->initialized = 1;
-    }
 
 #ifndef NDE_NO_WINDOW
     if (nk_begin(ctx, title, nk_rect(0, 0, 800, 600),
@@ -442,14 +445,14 @@ int node_edit(struct nk_context *ctx, struct node_editor* nodeedit, const char* 
                     /* always have last selected node on top */
 
                     node = nk_window_get_panel(ctx);
-                    if (updated != nodeedit->end && nk_input_is_mouse_hovering_rect(in, node->bounds) &&
-                            (!(it->prev && nk_input_is_mouse_hovering_rect(in,
+                    if (updated != nodeedit->end && hovering_in_node(in, node->bounds) &&
+                            (!(it->prev && hovering_in_node(in,
                                                                                                         nk_layout_space_rect_to_screen(ctx, node->bounds)))))
                     {
                         updated = it;
                     }
                     /* contextual menu */
-                    if (!nodeedit->popupOpened && nk_input_is_mouse_hovering_rect(in, node->bounds))
+                    if (!nodeedit->popupOpened && hovering_in_node(in, node->bounds))
                         nodeedit->hovered = it;
 
                     /* ================= NODE CONTENT =====================*/
@@ -551,7 +554,7 @@ int node_edit(struct nk_context *ctx, struct node_editor* nodeedit, const char* 
             }
 
             /* node selection */
-            if (nk_window_is_active(ctx, title) && nk_input_is_mouse_down(in, NK_BUTTON_LEFT) && nk_input_is_mouse_hovering_rect(in, nk_layout_space_bounds(ctx))) {
+            if (nk_window_is_active(ctx, title) && nk_input_is_mouse_down(in, NK_BUTTON_LEFT) && hovering_in_node(in, nk_layout_space_bounds(ctx))) {
                 it = nodeedit->begin;
                 nodeedit->selected = NULL;
                 nodeedit->bounds = nk_rect(in->mouse.pos.x, in->mouse.pos.y, 100, 200);
@@ -559,7 +562,7 @@ int node_edit(struct nk_context *ctx, struct node_editor* nodeedit, const char* 
                     struct nk_rect b = nk_layout_space_rect_to_screen(ctx, it->bounds);
                     b.x -= nodeedit->scrolling.x;
                     b.y -= nodeedit->scrolling.y;
-                    if (nk_input_is_mouse_hovering_rect(in, b))
+                    if (hovering_in_node(in, b))
                         nodeedit->selected = it;
                     it = it->next;
                 }
@@ -573,8 +576,8 @@ int node_edit(struct nk_context *ctx, struct node_editor* nodeedit, const char* 
         /* window content scrolling */
         if (nk_window_is_active(ctx, title) &&
                 nk_input_is_mouse_down(in, NK_BUTTON_MIDDLE)) {
-            nodeedit->scrolling.x += in->mouse.delta.x;
-            nodeedit->scrolling.y += in->mouse.delta.y;
+            nodeedit->scrolling.x -= in->mouse.delta.x;
+            nodeedit->scrolling.y -= in->mouse.delta.y;
         }
 #ifndef NDE_NO_WINDOW
     }
