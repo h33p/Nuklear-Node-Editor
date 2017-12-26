@@ -105,7 +105,9 @@ struct node_editor {
     struct node_linking linking;
 };
 
-static void node_editor_push(struct node_editor *editor, struct node *node, bool delete_list = false)
+#ifndef NDE_FUNCTIONS
+#define NDE_FUNCTIONS
+void node_editor_push(struct node_editor *editor, struct node *node, bool delete_list = false)
 {
     struct node** begin;
     struct node** end;
@@ -133,7 +135,7 @@ static void node_editor_push(struct node_editor *editor, struct node *node, bool
     }
 }
 
-static struct node* node_editor_pop(struct node_editor *editor, struct node *node, bool delete_list = false)
+struct node* node_editor_pop(struct node_editor *editor, struct node *node, bool delete_list = false)
 {
     struct node** begin;
     struct node** end;
@@ -160,7 +162,7 @@ static struct node* node_editor_pop(struct node_editor *editor, struct node *nod
     return node;
 }
 
-static struct node* node_editor_find(struct node_editor *editor, int ID)
+struct node* node_editor_find(struct node_editor *editor, int ID)
 {
     struct node *iter = editor->begin;
     while (iter) {
@@ -171,7 +173,7 @@ static struct node* node_editor_find(struct node_editor *editor, int ID)
     return NULL;
 }
 
-static void node_editor_add(struct node_editor *editor, const char *name, struct nk_rect bounds,
+void node_editor_add(struct node_editor *editor, const char *name, struct nk_rect bounds,
         struct node_data data, int in_count, int out_count, node_functions ftable, bool infinite_inputs = false, int gapped_inputs = 0, struct nk_color gapped_color = nk_rgb(100, 70, 70))
 {
     struct node *node;
@@ -196,7 +198,7 @@ static void node_editor_add(struct node_editor *editor, const char *name, struct
     node_editor_push(editor, node);
 }
 
-static void node_editor_link(struct node_editor *editor, int in_id, int in_slot,
+void node_editor_link(struct node_editor *editor, int in_id, int in_slot,
     int out_id, int out_slot, bool uselinking = false)
 {
     struct node_link* link = NULL;
@@ -240,7 +242,7 @@ static void node_editor_link(struct node_editor *editor, int in_id, int in_slot,
 }
 
 //I have a feeling the loop inside this function can be optimized
-static void node_editor_clear_gaps(struct node_editor* editor)
+void node_editor_clear_gaps(struct node_editor* editor)
 {
     for (int i = 0; i < editor->node_count; i++)
     {
@@ -276,7 +278,7 @@ static void node_editor_clear_gaps(struct node_editor* editor)
     }
 }
 
-static void node_editor_clean_links(struct node_editor* editor)
+void node_editor_clean_links(struct node_editor* editor)
 {
     struct node* tnode = editor->begin;
     do
@@ -587,4 +589,17 @@ int node_edit(struct nk_context *ctx, struct node_editor* nodeedit, const char* 
     return 1;
 #endif
 }
-
+#else
+void node_editor_push(struct node_editor *editor, struct node *node, bool delete_list = false);
+struct node* node_editor_pop(struct node_editor *editor, struct node *node, bool delete_list = false);
+struct node* node_editor_find(struct node_editor *editor, int ID);
+void node_editor_add(struct node_editor *editor, const char *name, struct nk_rect bounds,
+					 struct node_data data, int in_count, int out_count, node_functions ftable, bool infinite_inputs = false, int gapped_inputs = 0, struct nk_color gapped_color = nk_rgb(100, 70, 70));
+void contextual_menu(struct node_editor* nodeedit, struct nk_context* ctx, const char* title);
+void node_editor_clear_gaps(struct node_editor* editor);
+void node_editor_clean_links(struct node_editor* editor);
+void node_editor_link(struct node_editor *editor, int in_id, int in_slot,
+					  int out_id, int out_slot, bool uselinking = false);
+int node_edit(struct nk_context *ctx, struct node_editor* nodeedit, const char* title);
+void node_editor_init(struct node_editor *editor);
+#endif
